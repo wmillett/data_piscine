@@ -39,12 +39,12 @@ setup:
 		echo "Creating item directory..."; \
 		mkdir item; \
 	fi
-	if [ -f "subject.zip" ]; then \
+	if [ -f "../../too_big/subject.zip" ]; then \
 		mkdir -p tmp_extract; \
-		unzip subject.zip "subject/customer/*" -d tmp_extract/; \
+		unzip ../../too_big/subject.zip "subject/customer/*" -d tmp_extract/; \
 		mv tmp_extract/subject/customer/* customer/; \
 		rm -rf tmp_extract/*; \
-		unzip subject.zip "subject/item/*" -d tmp_extract/; \
+		unzip ../../too_big/subject.zip "subject/item/*" -d tmp_extract/; \
 		mv tmp_extract/subject/item/* item/; \
 		rm -rf tmp_extract; \
 	fi
