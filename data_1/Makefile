@@ -21,7 +21,7 @@ re: fclean all
 run: all
 	docker exec -it db_container bash
 
-remove:
+remove_empty:
 	docker container prune -f
 
 
@@ -70,4 +70,16 @@ combine_tables:
 remove_duplicates:
 	docker exec -it db_container psql -U wmillett -d piscineds -f ex02/remove_duplicates.sql
 
-.PHONY: all up down fclean psql pgadmin re status import run remove items combine_tables setup clear remove_duplicates
+remove_tables:
+	docker exec -it db_container psql -U wmillett -d piscineds -c "DROP TABLE IF EXISTS customers, items, orders, order_items CASCADE;"
+
+order:
+	docker exec -it db_container psql -U wmillett -d piscineds -f util/order_table.sql
+
+fusion:
+	docker exec -it db_container psql -U wmillett -d piscineds -f ex03/fusion.sql
+
+destroy: fclean remove_empty clear
+
+
+.PHONY: all up down fclean psql pgadmin re status import run remove_empty items combine_tables setup clear remove_duplicates remove_tables order fusion destroy

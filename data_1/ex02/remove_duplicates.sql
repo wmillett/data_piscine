@@ -1,31 +1,46 @@
 DO $$
-DECLARE
-    -- Declare a record variable to hold table names
-    table_record RECORD;
-    sql_query TEXT := 'DROP TABLE IF EXISTS customers;';
 BEGIN
-    -- Start building the SQL query
-    sql_query := sql_query || 'CREATE TABLE customers (LIKE data_2022_oct INCLUDING ALL);';
+    CREATE TABLE customers_dedup AS
+    WITH ordered AS (
+        SELECT *,
+               LAG(event_time) OVER (
+                   PARTITION BY user_id, product_id, user_session
+                   ORDER BY event_time
+               ) AS prev_event_time
+        FROM customers
+    ),
+    grouped AS (
+        SELECT *,
+            CASE
+                WHEN prev_event_time IS NULL THEN 1
+                WHEN EXTRACT(EPOCH FROM (event_time - prev_event_time)) > 1 THEN 1
+                ELSE 0
+            END AS new_group_marker
+        FROM ordered
+    ),
+    numbered AS (
+        SELECT *,
+               SUM(new_group_marker) OVER (
+                   PARTITION BY user_id, product_id, user_session
+                   ORDER BY event_time
+                   ROWS UNBOUNDED PRECEDING
+               ) AS group_num
+        FROM grouped
+    ),
+    deduped AS (
+        SELECT *,
+               ROW_NUMBER() OVER (
+                   PARTITION BY user_id, product_id, user_session, group_num
+                   ORDER BY event_time
+               ) AS rn
+        FROM numbered
+    )
+    SELECT event_time, event_type, product_id, price, user_id, user_session
+    FROM deduped
+    WHERE rn = 1;
 
-    -- Loop through all tables with the prefix 'data_'
-    FOR table_record IN
-        SELECT tablename
-        FROM pg_tables
-        WHERE tablename LIKE 'data_%'
-    LOOP
-        sql_query := sql_query || 'INSERT INTO customers SELECT * FROM ' || table_record.tablename || ';';
-    END LOOP;
+    DROP TABLE customers;
+    ALTER TABLE customers_dedup RENAME TO customers;
 
-    -- Execute the dynamically generated SQL
-    EXECUTE sql_query;
-
-    -- Remove duplicates from the customers table
-    --EXECUTE 'CREATE TABLE customers_temp AS SELECT DISTINCT ON (event_type, product_id, event_time) * FROM customers ORDER BY event_type, product_id, event_time;';
-    --EXECUTE 'TRUNCATE TABLE customers;';
-    --EXECUTE 'INSERT INTO customers SELECT * FROM customers_temp;';
-    --EXECUTE 'DROP TABLE customers_temp;';
-
-    EXECUTE 'DELETE FROM customers a USING customers b WHERE a.ctid < b.ctid AND a.event_time = b.event_time AND a.event_type = b.event_type AND a.product_id = b.product_id AND a.price = b.price AND a.user_id = b.user_id AND a.user_session = b.user_session;';
-
-    RAISE NOTICE 'Customers table created and populated successfully.';
+    RAISE NOTICE 'Duplicates removed from customers table successfully (time-window based, ignoring event_type).';
 END $$;
