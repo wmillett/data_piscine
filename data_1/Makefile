@@ -39,12 +39,12 @@ setup:
 		echo "Creating item directory..."; \
 		mkdir item; \
 	fi
-	if [ -f "../../too_big/subject.zip" ]; then \
+	if [ -f "../../utils/subject.zip" ]; then \
 		mkdir -p tmp_extract; \
-		unzip ../../too_big/subject.zip "subject/customer/*" -d tmp_extract/; \
+		unzip ../../utils/subject.zip "subject/customer/*" -d tmp_extract/; \
 		mv tmp_extract/subject/customer/* customer/; \
 		rm -rf tmp_extract/*; \
-		unzip ../../too_big/subject.zip "subject/item/*" -d tmp_extract/; \
+		unzip ../../utils/subject.zip "subject/item/*" -d tmp_extract/; \
 		mv tmp_extract/subject/item/* item/; \
 		rm -rf tmp_extract; \
 	fi
@@ -79,7 +79,9 @@ order:
 fusion:
 	docker exec -it db_container psql -U wmillett -d piscineds -f ex03/fusion.sql
 
+test: all import items combine_tables
+
 destroy: fclean remove_empty clear
 
 
-.PHONY: all up down fclean psql pgadmin re status import run remove_empty items combine_tables setup clear remove_duplicates remove_tables order fusion destroy
+.PHONY: all up down fclean psql pgadmin re status import run remove_empty items combine_tables setup clear remove_duplicates remove_tables order fusion test destroy
