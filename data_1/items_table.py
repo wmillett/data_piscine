@@ -27,7 +27,7 @@ cur = conn.cursor()
 try:
     # Ensure the table name is correctly formatted in the SQL command
     formatted_sql = create_table_sql
-    print(f"Executing SQL: {formatted_sql}")  # Debugging line
+    #print(f"Executing SQL: {formatted_sql}")  # Debugging line
     cur.execute(formatted_sql)
     conn.commit()
     print("Created table items")

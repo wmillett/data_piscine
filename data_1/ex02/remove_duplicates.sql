@@ -1,52 +1,3 @@
--- DO $$
--- BEGIN
---     CREATE TABLE customers_dedup AS
---     WITH ordered AS (
---         SELECT *,
---                LAG(event_time) OVER (
---                    PARTITION BY user_id, product_id, user_session
---                    ORDER BY event_time
---                ) AS prev_event_time
---         FROM customers
---     ),
---     grouped AS (
---         SELECT *,
---             CASE
---                 WHEN prev_event_time IS NULL THEN 1
---                 WHEN EXTRACT(EPOCH FROM (event_time - prev_event_time)) > 1 THEN 1
---                 ELSE 0
---             END AS new_group_marker
---         FROM ordered
---     ),
---     numbered AS (
---         SELECT *,
---                SUM(new_group_marker) OVER (
---                    PARTITION BY user_id, product_id, user_session
---                    ORDER BY event_time
---                    ROWS UNBOUNDED PRECEDING
---                ) AS group_num
---         FROM grouped
---     ),
---     deduped AS (
---         SELECT *,
---                ROW_NUMBER() OVER (
---                    PARTITION BY user_id, product_id, user_session, group_num
---                    ORDER BY event_time
---                ) AS rn
---         FROM numbered
---     )
---     SELECT event_time, event_type, product_id, price, user_id, user_session
---     FROM deduped
---     WHERE rn = 1;
-
---     DROP TABLE customers;
---     ALTER TABLE customers_dedup RENAME TO customers;
-
---     RAISE NOTICE 'Duplicates removed from customers table successfully (time-window based, ignoring event_type).';
--- END $$;
-
-
-
 WITH Duplicates as (
     SELECT ctid
     FROM (
@@ -69,5 +20,22 @@ WITH Duplicates as (
 DELETE FROM customers
 WHERE ctid IN (SELECT ctid FROM Duplicates);
 
+
+
+-- Remove duplicates from items table
+DELETE FROM items
+WHERE ctid NOT IN (
+    SELECT MIN(ctid)
+    FROM items
+    GROUP BY product_id, category_id, category_code, brand
+);
+
+
+
+
+--- Check remaining rows in customers and items tables
 SELECT COUNT(*) AS remaining_rows FROM customers;
-RAISE NOTICE 'Duplicates removed from customers table successfully (time-window based, ignoring event_type).';
+SELECT COUNT(*) AS remaining_items FROM items;
+
+
+--RAISE NOTICE 'Duplicates removed from customers table successfully (time-window based, ignoring event_type).';
