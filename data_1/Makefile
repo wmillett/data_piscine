@@ -1,6 +1,6 @@
 DC = docker compose
 
-all: up
+all: setup up
 
 status:
 	$(DC) ps
@@ -79,9 +79,15 @@ order:
 fusion:
 	docker exec -it db_container psql -U wmillett -d piscineds -f ex03/fusion.sql
 
-test: all import items combine_tables
+space:
+	../docker_space.sh wmillett
+
+delete_customers:
+	docker exec -it db_container psql -U wmillett -d piscineds -f util/delete_customers.sql
 
 destroy: fclean remove_empty clear
 
+test_removed_duplicates:
+	docker exec -it db_container psql -U wmillett -d piscineds -f util/test_duplicates.sql
 
-.PHONY: all up down fclean psql pgadmin re status import run remove_empty items combine_tables setup clear remove_duplicates remove_tables order fusion test destroy
+.PHONY: all up down fclean psql pgadmin re status delete_customers import run remove_empty space items combine_tables setup clear remove_duplicates remove_tables order fusion test_removed_duplicates destroy
