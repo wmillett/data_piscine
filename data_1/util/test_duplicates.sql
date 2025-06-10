@@ -18,14 +18,14 @@ BEGIN
     FROM customers
     WHERE event_time = '2022-10-01 00:00:32'
       AND event_type = 'remove_from_cart'
-      AND product_id = 5809103;
+      AND product_id = 5779403;
     RAISE NOTICE 'Count: %', count_result;
 
     SELECT COUNT(*) INTO count_result
     FROM customers
     WHERE event_time = '2022-10-01 00:00:33'
       AND event_type = 'remove_from_cart'
-      AND product_id = 5809103;
+      AND product_id = 5779403;
     RAISE NOTICE 'Count: %', count_result;
 
     RAISE NOTICE 'The following count should be of 1 and 1 and not lower:';
