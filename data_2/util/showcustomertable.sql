@@ -1,0 +1,1 @@
+SELECT * FROM customers limit 100;
